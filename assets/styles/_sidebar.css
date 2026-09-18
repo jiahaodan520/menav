@@ -573,6 +573,9 @@ main.content {
   overflow-y: auto;
   /* 使用auto替代scroll，只在需要时显示滚动条 */
   overflow-x: hidden;
+  /* 分类锚点跳转平滑滚动 + iOS 惯性滚动，移动端更丝滑 */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
   width: calc(100vw - var(--sidebar-width));
   display: flex;
   flex-direction: column;

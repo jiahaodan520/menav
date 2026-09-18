@@ -59,6 +59,8 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* 取消移动端默认的方形点击高亮（tap 时那块浅蓝色背景） */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* 全局 Focus Visible 样式 */
@@ -259,4 +261,56 @@ html.no-js .menu-toggle {
 .overlay.active {
   opacity: 1;
   visibility: visible;
+}
+
+/* ============================================
+   移动端体验优化：触摸反馈 & 减少抖动
+   ============================================ */
+
+/* 触摸设备：取消 :hover 的抬升/位移，避免 tap 后元素卡在“悬浮态”造成的迟滞感；
+   改用干脆的按压反馈（scale），观感更跟手、更“丝滑” */
+@media (hover: none), (pointer: coarse) {
+  .site-card:hover,
+  .menu-toggle:hover,
+  .search-toggle:hover,
+  .theme-toggle:hover,
+  .category-toggle:hover {
+    transform: none;
+  }
+
+  .nav-item:hover .external-icon,
+  .submenu-item:hover i {
+    transform: none;
+  }
+
+  /* 抵消 hover 的 padding-right 位移（属布局属性，无法靠 transform 复位） */
+  .submenu-item:hover {
+    padding-left: 1rem;
+  }
+
+  .site-card:active {
+    transform: scale(0.97);
+    transition-duration: 0.12s;
+  }
+
+  .menu-toggle:active,
+  .search-toggle:active,
+  .theme-toggle:active,
+  .category-toggle:active,
+  .nav-item:active {
+    transform: scale(0.92);
+    transition-duration: 0.12s;
+  }
+}
+
+/* 尊重系统“减少动态效果”偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
