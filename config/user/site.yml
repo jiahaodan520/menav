@@ -109,18 +109,6 @@ social:
 
 # 导航配置（顺序第一项即首页/默认打开页）
 navigation:
-  - name: 常用 # 菜单名称
-    icon: fas fa-star # Font Awesome 图标类
-    id: common # 页面标识符（唯一，需与 pages/<id>.yml 对应）
-  - name: 项目
-    icon: fas fa-project-diagram
-    id: projects
-  - name: 文章
-    icon: fas fa-book
-    id: articles
-  - name: 书签
-    icon: fas fa-bookmark
-    id: bookmarks
-  - name: 关于
-    icon: fas fa-file-alt
-    id: content
+  - name: 书签 # 菜单名称
+    icon: fas fa-bookmark # Font Awesome 图标类
+    id: bookmarks # 页面标识符（唯一，需与 pages/<id>.yml 对应）
