@@ -43,18 +43,92 @@ function updateCategoryToggleIcon(state: 'up' | 'down'): void {
   }
 }
 
-// 切换嵌套元素
+// 获取某个可折叠容器直属的内容节点
+function getNestedContent(container: HTMLElement): HTMLElement | null {
+  if (container.classList.contains('category')) {
+    return qs(':scope > .category-content', container);
+  }
+  if (container.classList.contains('group')) {
+    return qs(':scope > .group-content', container);
+  }
+  return null;
+}
+
+// 每个容器进行中的动画收尾（cleanup + 兜底 timer），避免打断时残留内联高度/裁剪类
+const animationState = new WeakMap<HTMLElement, { timer: number; dispose: () => void }>();
+
+function finalizeNestedAnimation(container: HTMLElement, content: HTMLElement | null): void {
+  const pending = animationState.get(container);
+  if (pending) {
+    window.clearTimeout(pending.timer);
+    animationState.delete(container);
+    pending.dispose(); // 移除旧的 transitionend 监听并复位，避免打断动画时误伤下一次
+  } else {
+    if (content) content.style.maxHeight = '';
+    container.classList.remove('animating');
+  }
+}
+
+// 无动画地设置展开/收起（用于初始恢复与全部展开/收起，避免逐帧重排）
+function setNestedStateInstant(container: HTMLElement, expand: boolean): void {
+  const content = getNestedContent(container);
+  finalizeNestedAnimation(container, content);
+  container.classList.toggle('collapsed', !expand);
+}
+
+// 切换嵌套元素（基于 scrollHeight 的平滑高度动画）
 function toggleNestedElement(container: HTMLElement | null): void {
   if (!isNestedContainerCollapsible(container)) return;
-  const isCollapsed = container.classList.contains('collapsed');
 
-  if (isCollapsed) {
-    container.classList.remove('collapsed');
-    saveToggleState(container, 'expanded');
+  const content = getNestedContent(container);
+  const willExpand = container.classList.contains('collapsed');
+
+  // 收尾上一次可能进行中的动画，从当前真实高度继续，保证快速连点不跳变
+  finalizeNestedAnimation(container, content);
+
+  if (!content) {
+    // 无可测量内容（异常情况）：退化为纯类切换
+    container.classList.toggle('collapsed', !willExpand);
   } else {
-    container.classList.add('collapsed');
-    saveToggleState(container, 'collapsed');
+    const start = content.getBoundingClientRect().height;
+    container.classList.add('animating');
+
+    let target: number;
+    if (willExpand) {
+      container.classList.remove('collapsed'); // :not(.collapsed) → max-height:none，animating 期裁剪
+      target = content.scrollHeight;
+      content.style.maxHeight = `${start}px`;
+      void content.offsetHeight; // 强制回流，锁定起始高度
+      requestAnimationFrame(() => {
+        content.style.maxHeight = `${target}px`;
+      });
+    } else {
+      content.style.maxHeight = `${start}px`; // 从当前高度（原本 none）钉住
+      void content.offsetHeight;
+      container.classList.add('collapsed');
+      requestAnimationFrame(() => {
+        content.style.maxHeight = '0px';
+      });
+    }
+
+    const dispose = () => {
+      content.removeEventListener('transitionend', onTransitionEnd);
+      content.style.maxHeight = '';
+      container.classList.remove('animating');
+    };
+    const onTransitionEnd = (e: Event) => {
+      const te = e as TransitionEvent;
+      if (te.target === content && te.propertyName === 'max-height') {
+        finalizeNestedAnimation(container, content);
+      }
+    };
+    content.addEventListener('transitionend', onTransitionEnd);
+    // 兜底：极端情况（如目标高度为 0）transitionend 可能不触发
+    const timer = window.setTimeout(() => finalizeNestedAnimation(container, content), 400);
+    animationState.set(container, { timer, dispose });
   }
+
+  saveToggleState(container, willExpand ? 'expanded' : 'collapsed');
 
   // 触发自定义事件
   const event = new CustomEvent('nestedToggle', {
@@ -62,7 +136,7 @@ function toggleNestedElement(container: HTMLElement | null): void {
       element: container,
       type: container.dataset.type,
       name: container.dataset.name,
-      isCollapsed: !isCollapsed,
+      isCollapsed: !willExpand,
     },
   });
   document.dispatchEvent(event);
@@ -86,8 +160,9 @@ function restoreToggleState(element: HTMLElement | null): void {
   const key = `menav-toggle-${type}-${level}-${name}`;
   const savedState = localStorage.getItem(key);
 
-  if (savedState === 'collapsed') {
-    element.classList.add('collapsed');
+  // 默认收起（SSR 已渲染 collapsed）。仅当用户显式展开过时才无动画地展开。
+  if (savedState === 'expanded') {
+    setNestedStateInstant(element, true);
   }
 }
 
@@ -147,8 +222,9 @@ function extractNestedData(element: HTMLElement): NestedStructureNode {
 function expandAll(): void {
   const activePage = qs(SELECTORS.pageActive);
   if (activePage) {
+    // 批量瞬时展开：不做逐个高度动画，避免一次性重排导致的掉帧
     getCollapsibleNestedContainers(activePage).forEach((element) => {
-      element.classList.remove('collapsed');
+      setNestedStateInstant(element, true);
       saveToggleState(element, 'expanded');
     });
   }
@@ -158,7 +234,7 @@ function collapseAll(): void {
   const activePage = qs(SELECTORS.pageActive);
   if (activePage) {
     getCollapsibleNestedContainers(activePage).forEach((element) => {
-      element.classList.add('collapsed');
+      setNestedStateInstant(element, false);
       saveToggleState(element, 'collapsed');
     });
   }

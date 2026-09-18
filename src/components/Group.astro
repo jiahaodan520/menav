@@ -23,7 +23,7 @@ const isToggleable = hasSubgroups || hasCards;
 ---
 
 <div
-  class:list={['group', `group-level-${groupLevel}`]}
+  class:list={['group', `group-level-${groupLevel}`, isToggleable && 'collapsed']}
   data-type="group"
   data-name={group.name}
   data-icon={group.icon}

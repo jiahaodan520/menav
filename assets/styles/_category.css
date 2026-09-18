@@ -289,23 +289,39 @@
   }
 }
 
-/* 展开/折叠动画 */
+/* 展开/折叠动画
+   高度不再用 max-height 魔法值（原 5000px 会因超大盒子逐帧重排而掉帧），
+   而是由 JS 依据 scrollHeight 精确设置并动画；展开静止态用 none 以免裁剪卡片阴影。 */
 .category-content,
 .group-content {
-  overflow: visible;
-  transition:
-    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  max-height: 5000px;
-  opacity: 1;
-}
-
-.category.collapsed .category-content,
-.group.collapsed .group-content {
   overflow: hidden;
   max-height: 0;
   opacity: 0;
   margin-top: 0;
+  transition:
+    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+}
+
+.category:not(.collapsed) > .category-content,
+.group:not(.collapsed) > .group-content {
+  overflow: visible;
+  max-height: none;
+  opacity: 1;
+}
+
+/* 动画进行中：强制裁剪，保证 slide 收放不溢出 */
+.category.animating > .category-content,
+.group.animating > .group-content {
+  overflow: hidden;
+}
+
+/* 无 JS 兜底：静态展开全部内容，保证可访问 */
+html.no-js .category-content,
+html.no-js .group-content {
+  overflow: visible;
+  max-height: none !important;
+  opacity: 1 !important;
 }
 
 /* 收起状态下调整header的下边距 */

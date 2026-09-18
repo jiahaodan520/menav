@@ -27,7 +27,7 @@ const isToggleable = hasSubcategories || hasGroups || hasCards;
 ---
 
 <section
-  class:list={['category', `category-level-${categoryLevel}`]}
+  class:list={['category', `category-level-${categoryLevel}`, isToggleable && 'collapsed']}
   id={id}
   data-type="category"
   data-id={id}
