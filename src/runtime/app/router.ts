@@ -10,6 +10,7 @@ import type {
 const nested = require('./nested.ts') as {
   initializeNestedCategories: () => void;
   toggleCategories: () => void;
+  revealNestedTarget: (el: HTMLElement | null) => void;
 };
 const { getRuntimeConfig } = require('../runtime-config.ts') as typeof import('../runtime-config');
 const { buildRoutePath, parseRouteFromHref } =
@@ -295,6 +296,11 @@ module.exports = function initRouting(
       }
 
       if (!targetCategory) return false;
+
+      // 展开目标分类及其祖先，确保点击侧边栏/深链时目标目录被打开，而不是滚到收起的标题处。
+      // 展开为瞬时（无高度动画），随后强制回流，使下方 rect 基于展开后的真实布局测量。
+      nested.revealNestedTarget(targetCategory);
+      void targetCategory.offsetHeight;
 
       // 优化的滚动实现：滚动到使目标分类位于视口 1/4 处（更靠近顶部位置）
       try {

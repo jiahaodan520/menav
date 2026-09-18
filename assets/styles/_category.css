@@ -292,6 +292,7 @@
 /* 展开/折叠动画
    高度不再用 max-height 魔法值（原 5000px 会因超大盒子逐帧重排而掉帧），
    而是由 JS 依据 scrollHeight 精确设置并动画；展开静止态用 none 以免裁剪卡片阴影。 */
+/* 收起（collapsed）为动画目标态：过渡更短、更跟手（解决“收回去偏慢”） */
 .category-content,
 .group-content {
   overflow: hidden;
@@ -299,15 +300,19 @@
   opacity: 0;
   margin-top: 0;
   transition:
-    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.25s ease;
+    max-height 0.18s cubic-bezier(0.4, 0, 1, 1),
+    opacity 0.15s ease;
 }
 
+/* 展开（非 collapsed）为动画目标态：保持平滑的 ease-out，略长于收起 */
 .category:not(.collapsed) > .category-content,
 .group:not(.collapsed) > .group-content {
   overflow: visible;
   max-height: none;
   opacity: 1;
+  transition:
+    max-height 0.28s cubic-bezier(0.25, 1, 0.5, 1),
+    opacity 0.22s ease;
 }
 
 /* 动画进行中：强制裁剪，保证 slide 收放不溢出 */

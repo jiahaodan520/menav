@@ -76,6 +76,30 @@ function setNestedStateInstant(container: HTMLElement, expand: boolean): void {
   container.classList.toggle('collapsed', !expand);
 }
 
+function isCollapsibleContainerNode(el: HTMLElement | null): el is HTMLElement {
+  return Boolean(
+    el &&
+      typeof el.classList !== 'undefined' &&
+      (el.classList.contains('category') || el.classList.contains('group'))
+  );
+}
+
+// 供侧边栏/深链跳转使用：瞬时展开目标容器及其所有可折叠祖先，
+// 保证点击分类导航时目标目录被展开（而非只滚动到收起的标题处）
+function revealNestedTarget(target: HTMLElement | null): void {
+  if (!target) return;
+  if (isCollapsibleContainerNode(target)) {
+    setNestedStateInstant(target, true);
+  }
+  let parent: HTMLElement | null = target.parentElement;
+  while (parent) {
+    if (isCollapsibleContainerNode(parent)) {
+      setNestedStateInstant(parent, true);
+    }
+    parent = parent.parentElement;
+  }
+}
+
 // 切换嵌套元素（基于 scrollHeight 的平滑高度动画）
 function toggleNestedElement(container: HTMLElement | null): void {
   if (!isNestedContainerCollapsible(container)) return;
@@ -290,6 +314,7 @@ module.exports = {
   expandAll,
   getNestedStructure,
   initializeNestedCategories,
+  revealNestedTarget,
   toggleCategories,
   toggleCategory,
   updateCategoryToggleIcon,
